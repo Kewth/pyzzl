@@ -45,3 +45,10 @@ def add_event(event):
 def get_event(event):
     peo = register.peo
     return event in peo.events
+
+def tryusemoney(mon):
+    peo = register.peo
+    if peo.money < mon:
+        return False
+    peo.money -= mon
+    return True

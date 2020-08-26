@@ -13,11 +13,15 @@ def work(stdscr):
             screen.refresh(False)
             time.sleep(1)
             return
-        city = Map.main_city()
-        player = people.player(city, 5, 5)
+        player = people.player()
         data.register(player)
         if os.path.exists('data/default'):
             data.init('default')
+        city = Map.main_city()
+        player.inmap = city
+        player.px = 5
+        player.py = 5
+        city.add_people(player)
         screen.clear()
         screen.write(20, 20, city.name)
         screen.refresh()

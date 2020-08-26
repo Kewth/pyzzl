@@ -13,7 +13,7 @@ def make_xy_list(xmin, xmax, ymin, ymax):
     random.shuffle(xy_list)
     return xy_list
 
-class base_people:
+class base_people: # {{{
     def __init__(self, inmap, px, py, name, health, attack, speed, money, camp):
         self.inmap = inmap
         self.px = px
@@ -26,7 +26,8 @@ class base_people:
         self.money = money
         self.camp = camp
         self.clock = time.time()
-        self.inmap.add_people(self)
+        if inmap is not None:
+            self.inmap.add_people(self)
         self.attacked = False
     def real_todo(self):
         for dx in [-1, 0, 1]:
@@ -58,7 +59,9 @@ class base_people:
         self.health = min(self.health + x, self.health_max)
     def die(self):
         pass
+# }}}
 
+# pigs {{{
 class pig (base_people):
     def __init__(self, inmap, px, py):
         base_people.__init__(self, inmap, px, py, 'Pig', 5, 2, 1.5, 2, 'Natural')
@@ -99,16 +102,19 @@ class pig_king (base_people):
             return screen.char('P', curses.COLOR_RED, curses.COLOR_BLACK)
         else:
             return screen.char('P')
+# }}}
 
 class npc (base_people):
     def __init__(self, inmap, px, py, name):
-        base_people.__init__(self, inmap, px, py, name, 10000, 0, 1e60, 0, 'Neutral')
+        base_people.__init__(self, inmap, px, py, name, 10000, 0, 10.0, 0, 'Neutral')
+    def todo(self):
+        self.health = self.health_max
     def talk(self):
         screen.infobox('{}({})'.format(self.name, self.camp), ['I am too tired to talk with you...'])
     def get_face(self):
         return screen.char('@')
 
-class npc_white (npc):
+class npc_white (npc): # {{{
     def __init__(self, inmap, px, py):
         npc.__init__(self, inmap, px, py, 'White')
     def talk(self):
@@ -129,10 +135,46 @@ class npc_white (npc):
             if not data.save(name):
                 screen.infobox('{}({})'.format(self.name, self.camp),
                         ['I am coufused.'])
+# }}}
 
-class player (base_people):
+class npc_peter (npc): # {{{
     def __init__(self, inmap, px, py):
-        base_people.__init__(self, inmap, px, py, 'Adventurer', 20, 3, 0.0, 0, 'Neutral')
+        npc.__init__(self, inmap, px, py, 'Peter')
+    def talk(self):
+        buy1 = data.get_event('shop 1')
+        buy2 = data.get_event('shop 2')
+        buy3 = data.get_event('shop 3')
+        screen.infobox('{}({})'.format(self.name, self.camp),
+                ['Hey, buddy.', 'I think you must want to buy something.', 'Donot worry, the shop is safe.',
+                    '(1) New teleport point. ({})'.format('bought' if buy1 else 50),
+                    '(2) Strength. ({})'.format('bought' if buy2 else 200),
+                    '(3) Open the door. ({})'.format('bought' if buy3 else 100),
+                    ])
+        screen.refresh()
+        cs = screen.choose('123', True)
+        if cs == ord('1'):
+            if not buy1 and data.tryusemoney(50):
+                data.add_event('shop 1')
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Now you can go back to Main City to check the new teleport.'])
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
+        if cs == ord('2'):
+            if not buy2 and data.tryusemoney(200):
+                data.add_event('shop 2')
+                data.register.peo.attack += 1
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Great.'])
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
+        if cs == ord('3'):
+            if not buy2 and data.tryusemoney(100):
+                data.add_event('shop 3')
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
+# }}}
+
+class player (base_people): # {{{
+    def __init__(self):
+        base_people.__init__(self, None, 0, 0, 'Adventurer', 20, 3, 0.0, 0, 'Neutral')
         self.mode = 'walk'
         self.keep_clock = 0
         self.events = set()
@@ -224,7 +266,7 @@ class player (base_people):
         if time.time() > self.keep_clock:
             self.mode = 'walk'
 
-        c = screen.ifgetch(0.1)
+        c = screen.ifgetch(0.2)
 
         if c == ord('w'):
             if self.mode == 'attack':
@@ -279,3 +321,4 @@ class player (base_people):
 
     def get_face(self):
         return screen.char('@', curses.COLOR_WHITE, curses.COLOR_BLUE)
+# }}}
