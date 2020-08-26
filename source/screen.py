@@ -18,9 +18,6 @@ pair_lis = [(curses.COLOR_WHITE, curses.COLOR_BLACK)]
 def init(scr, line, col):
     '初始化，返回是否成功'
 
-    if curses.LINES < line or curses.COLS < col:
-        return False
-
     global stdscr, LINE, COL
     stdscr = scr
     LINE = line
@@ -30,6 +27,8 @@ def init(scr, line, col):
     curses.curs_set(False)
     stdscr.nodelay(True)
     stdscr.keypad(True)
+    if curses.LINES < line or curses.COLS < col:
+        return False
     return True
 
 def getch(): # int

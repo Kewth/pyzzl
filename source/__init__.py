@@ -2,13 +2,16 @@
 
 import os
 import time
+import curses
 from pyzzl import screen, data, Map, floor, people
-from curses import wrapper
 
 def work(stdscr):
     try:
         LINE, COL = 40, 130
         if screen.init(stdscr, LINE, COL) == False:
+            screen.write(0, 0, 'Screen too small. Only {}x{} but {}x{} is needed.'.format(curses.LINES, curses.COLS, LINE, COL))
+            screen.refresh(False)
+            time.sleep(1)
             return
         city = Map.main_city()
         player = people.player(city, 5, 5)
@@ -49,5 +52,5 @@ def work(stdscr):
         time.sleep(1)
 
 def main():
-    wrapper(work)
+    curses.wrapper(work)
 
