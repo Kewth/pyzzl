@@ -28,23 +28,30 @@ class base_people: # {{{
         self.clock = time.time()
         if inmap is not None:
             self.inmap.add_people(self)
-        self.attacked = False
+        # self.attack_clock = 0
     def real_todo(self):
+        res = False
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 peo = self.inmap.get_people(self.px + dx, self.py + dy)
                 if peo is not None and peo.camp != self.camp:
-                    self.attacked = True
+                    res = True
                     peo.gethurt(self.attack, self)
+        if res:
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx != 0 or dy != 0:
+                        self.inmap.set_atk_map(self.px + dx, self.py + dy)
+        return res
     def todo(self):
-        self.attacked = False
         if time.time() > self.clock + self.speed:
             self.clock += self.speed
-            self.real_todo()
-            if not self.attacked:
+            if not self.real_todo():
                 for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
                     if self.inmap.trygoto(self, xy[0], xy[1]):
                         return
+            # else:
+                # self.attack_clock = time.time()
     def get_face(self):
         return screen.char('?')
     def gethurt(self, x, peo):
@@ -66,29 +73,31 @@ class pig (base_people):
     def __init__(self, inmap, px, py):
         base_people.__init__(self, inmap, px, py, 'Pig', 5, 2, 1.5, 2, 'Natural')
     def get_face(self):
-        if self.attacked:
-            return screen.char('p', curses.COLOR_RED, curses.COLOR_BLACK)
-        else:
+        # if time.time() < self.attack_clock + 0.2:
+            # return screen.char('p', curses.COLOR_RED, curses.COLOR_BLACK)
+        # else:
             return screen.char('p')
 
 class pig_fighter (base_people):
     def __init__(self, inmap, px, py):
         base_people.__init__(self, inmap, px, py, 'Pig soldier', 30, 4, 1.0, 10, 'Natural')
     def get_face(self):
-        if self.attacked:
-            return screen.char('p')
-        else:
+        # if time.time() < self.attack_clock + 0.2:
+            # return screen.char('p')
+        # else:
             return screen.char('p', curses.COLOR_RED, curses.COLOR_BLACK)
 
 class pig_king (base_people):
     def __init__(self, inmap, px, py):
         base_people.__init__(self, inmap, px, py, 'King of Pig', 15, 0, 5.0, 5, 'Natural')
     def real_todo(self):
+        res = False
         for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
             x, y = xy
             if self.inmap.get_people(x, y) is None and self.inmap.floor_map[x][y].can_pass(self):
-                self.attacked = True
+                res = True
                 newpig = pig(self.inmap, x, y)
+        return res
     def gethurt(self, x, peo):
         self.health -= min(self.health, x)
         if self.health == 0:
@@ -98,9 +107,9 @@ class pig_king (base_people):
             if peo.__class__ == player:
                 data.add_event('kill pig king')
     def get_face(self):
-        if self.attacked:
-            return screen.char('P', curses.COLOR_RED, curses.COLOR_BLACK)
-        else:
+        # if time.time() < self.attack_clock + 0.2:
+            # return screen.char('P', curses.COLOR_RED, curses.COLOR_BLACK)
+        # else:
             return screen.char('P')
 # }}}
 
@@ -180,6 +189,7 @@ class player (base_people): # {{{
         self.events = set()
 
     def todo (self):
+        # 处理视野
         tmp_map = [[True for i in range(self.inmap.COL)] for i in range(self.inmap.LINE)]
         for x in range(self.inmap.LINE):
             for y in range(self.inmap.COL):
@@ -204,11 +214,14 @@ class player (base_people): # {{{
                 y = self.py + dy - py
                 face = screen.char(' ')
                 if x in range(self.inmap.LINE) and y in range(self.inmap.COL) and tmp_map[x][y]:
-                    peo = self.inmap.get_people(x, y)
-                    if peo == None:
-                        face = self.inmap.floor_map[x][y].get_face()
+                    if time.time() < self.inmap.atk_map[x][y]:
+                        face = screen.char('X', curses.COLOR_WHITE, curses.COLOR_RED)
                     else:
-                        face = peo.get_face()
+                        peo = self.inmap.get_people(x, y)
+                        if peo == None:
+                            face = self.inmap.floor_map[x][y].get_face()
+                        else:
+                            face = peo.get_face()
                 screen.write_ch(dx, dy, face)
 
         screen.write(1, 0, ' ' * 14)
@@ -266,7 +279,7 @@ class player (base_people): # {{{
         if time.time() > self.keep_clock:
             self.mode = 'walk'
 
-        c = screen.ifgetch(0.2)
+        c = screen.ifgetch(0.1)
 
         if c == ord('w'):
             if self.mode == 'attack':

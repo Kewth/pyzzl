@@ -1,5 +1,6 @@
 '地图'
 
+import time
 from pyzzl import floor, people, data
 
 class base_map:
@@ -8,6 +9,7 @@ class base_map:
         self.COL = COL
         self.name = name
         self.floor_map = [[None for i in range(COL)] for i in range(LINE)]
+        self.atk_map = [[0 for i in range(COL)] for i in range(LINE)]
         self.people_list = set()
     def add_people (self, peo):
         self.people_list.add(peo)
@@ -21,7 +23,10 @@ class base_map:
             peo.py = py
             self.floor_map[px][py].meet(peo)
         return test
-    def get_people (self, px, py):
+    def set_atk_map(self, px, py):
+        if px in range(self.LINE) and py in range(self.COL):
+            self.atk_map[px][py] = time.time() + 0.2
+    def get_people(self, px, py):
         for peo in self.people_list:
             if peo.px == px and peo.py == py:
                 return peo
