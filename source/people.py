@@ -13,6 +13,27 @@ def make_xy_list(xmin, xmax, ymin, ymax):
     random.shuffle(xy_list)
     return xy_list
 
+def walk_find(self, dis):
+    def check(xmin, xmax, ymin, ymax, nx, ny):
+        if not self.inmap.trygoto(self, nx, ny, True):
+            return False
+        for x in range(xmin, xmax + 1):
+            for y in range(ymin, ymax + 1):
+                peo = self.inmap.get_people(x, y)
+                if peo is not None and peo.camp != self.camp:
+                    self.inmap.trygoto(self, nx, ny)
+                    return True
+        return False
+    px, py = self.px, self.py
+    if check(px - dis, px - 1, py - dis, py - 1, px - 1, py - 1): return
+    if check(px - dis, px - 1, py, py, px - 1, py): return
+    if check(px - dis, px - 1, py + 1, py + dis, px - 1, py + 1): return
+    if check(px, px, py - dis, py - 1, px, py - 1): return
+    if check(px, px, py + 1, py + dis, px, py + 1): return
+    if check(px + 1, px + dis, py - dis, py - 1, px + 1, py - 1): return
+    if check(px + 1, px + dis, py, py, px + 1, py): return
+    if check(px + 1, px + dis, py + 1, py + dis, px + 1, py + 1): return
+
 class base_people: # {{{
     def __init__(self, inmap, px, py, name, health, attack, speed, money, camp):
         self.inmap = inmap
@@ -29,40 +50,45 @@ class base_people: # {{{
         if inmap is not None:
             self.inmap.add_people(self)
         self.will_attack = False
-    def get_attack_list(self):
-        res = []
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                peo = self.inmap.get_people(self.px + dx, self.py + dy)
-                if peo is not None and peo.camp != self.camp:
-                    res.append(peo)
-        return res
-    def real_todo(self):
+        self.atk_xy_list = []
+    def update_atk_xy_list(self):
+        lis = make_xy_list(-1, 1, -1, 1)
+        lis.remove((0, 0))
+        self.atk_xy_list = []
+        for xy in lis:
+            dx, dy = xy
+            peo = self.inmap.get_people(self.px + dx, self.py + dy)
+            if peo is not None and peo.camp != self.camp:
+                self.atk_xy_list = lis
+                return
+    def todo_attack(self):
         res = False
         if self.will_attack:
             res = True
             self.will_attack = False
-            peo_list = self.get_attack_list()
-            for peo in peo_list:
-                    if peo is not None and peo.camp != self.camp:
-                        peo.gethurt(self.attack, self)
-            for dx in [-1, 0, 1]:
-                for dy in [-1, 0, 1]:
-                    if dx != 0 or dy != 0:
-                        self.inmap.set_atk_map(self.px + dx, self.py + dy)
-        elif len(self.get_attack_list()) != 0:
-            res = True
-            self.will_attack = True
-            self.clock += 0.5 - self.speed
+            for xy in self.atk_xy_list:
+                dx, dy = xy
+                peo = self.inmap.get_people(self.px + dx, self.py + dy)
+                if peo is not None and peo.camp != self.camp:
+                    peo.gethurt(self.attack, self)
+                self.inmap.set_atk_map(self.px + dx, self.py + dy)
+        else:
+            self.update_atk_xy_list()
+            if len(self.atk_xy_list) != 0:
+                res = True
+                self.will_attack = True
+                self.clock += 0.5 - self.speed
         return res
+    def todo_walk(self):
+        for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
+            if self.inmap.trygoto(self, xy[0], xy[1]):
+                return
     def todo(self):
         if time.time() > self.clock + self.speed:
             self.clock += self.speed
-            if not self.real_todo():
+            if not self.todo_attack():
                 self.will_attack = False
-                for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
-                    if self.inmap.trygoto(self, xy[0], xy[1]):
-                        return
+                self.todo_walk()
     def get_face(self):
         return screen.char('?')
     def gethurt(self, x, peo):
@@ -101,7 +127,9 @@ class pig_fighter (base_people):
 class pig_king (base_people):
     def __init__(self, inmap, px, py):
         base_people.__init__(self, inmap, px, py, 'King of Pig', 15, 0, 5.0, 5, 'Natural')
-    def real_todo(self):
+    def update_atk_xy_list(self):
+        pass
+    def todo_attack(self):
         res = False
         for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
             x, y = xy
@@ -109,6 +137,8 @@ class pig_king (base_people):
                 res = True
                 newpig = pig(self.inmap, x, y)
         return res
+    def todo_walk(self):
+        pass
     def gethurt(self, x, peo):
         self.health -= min(self.health, x)
         if self.health == 0:
@@ -118,10 +148,41 @@ class pig_king (base_people):
             if peo.__class__ == player:
                 data.add_event('kill pig king')
     def get_face(self):
-        # if time.time() < self.attack_clock + 0.2:
-            # return screen.char('P', curses.COLOR_RED, curses.COLOR_BLACK)
-        # else:
+        return screen.char('P')
+
+class pig_master (base_people):
+    def __init__(self, inmap, px, py):
+        base_people.__init__(self, inmap, px, py, 'Pig Master', 60, 4, 0.7, 30, 'Natural')
+    def gethurt(self, x, peo):
+        self.health -= min(self.health, x)
+        if self.health == 0:
+            if peo is not None:
+                peo.money += self.money
+            self.money = 0
+            if peo.__class__ == player:
+                data.add_event('kill pig master')
+    def update_atk_xy_list(self):
+        lis = make_xy_list(-2, 2, -2, 2)
+        lis.remove((0, 0))
+        lis.remove((-2, -2))
+        lis.remove((-2, +2))
+        lis.remove((+2, -2))
+        lis.remove((+2, +2))
+        self.atk_xy_list = []
+        for xy in lis:
+            dx, dy = xy
+            peo = self.inmap.get_people(self.px + dx, self.py + dy)
+            if peo is not None and peo.camp != self.camp:
+                self.atk_xy_list = lis
+                return
+    def todo_walk(self):
+        walk_find(self, 4)
+    def get_face(self):
+        if self.will_attack:
             return screen.char('P')
+        else:
+            return screen.char('P', curses.COLOR_RED, curses.COLOR_BLACK)
+
 # }}}
 
 class npc (base_people):
@@ -331,8 +392,11 @@ class player (base_people): # {{{
             self.mode = 'talk'
             self.keep_clock = time.time() + 1
         if c == ord('k'):
-            self.mode = 'defence'
-            self.keep_clock = time.time() + 0.2
+            if self.mode == 'defence':
+                self.mode = 'walk'
+            else:
+                self.mode = 'defence'
+                self.keep_clock = time.time() + 0.2
 
     def gethurt(self, x, peo):
         if self.mode == 'defence':

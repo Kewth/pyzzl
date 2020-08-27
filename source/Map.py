@@ -15,10 +15,10 @@ class base_map:
         self.people_list.add(peo)
     def remove_people(self, peo):
         self.people_list.remove(peo)
-    def trygoto (self, peo, px, py):
+    def trygoto (self, peo, px, py, onlycheck = False):
         '检查 [peo] 是否能移动到 ([px], [py]) 并移动'
         test = px in range(self.LINE) and py in range(self.COL) and self.floor_map[px][py].can_pass(peo) and self.get_people(px, py) is None
-        if test:
+        if test and not onlycheck:
             peo.px = px
             peo.py = py
             self.floor_map[px][py].meet(peo)
@@ -104,8 +104,15 @@ class spring_gallery (base_map):
         self.floor_map[9][0] = floor.event_door('shop 3')
         people.npc_peter(self, 7, 4)
         # 空地
+        for x in range(10, 15):
+            for y in range(0, 5):
+                self.floor_map[x][y] = floor.grass()
+        for y in range(1, 5):
+            self.floor_map[10][y] = floor.wall()
         for y in range(0, 5):
-            self.floor_map[13][y] = floor.wall()
+            self.floor_map[15][y] = floor.wall()
+        self.floor_map[10][0] = floor.once_door()
+        people.pig_master(self, 11, 4)
         # 传送点
         if data.get_event('shop 1'):
             self.floor_map[6][0] = floor.trans(0, 0, main_city)

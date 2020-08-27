@@ -92,7 +92,7 @@ class camp_grass (base_floor):
         if self.camp == 'Neutral':
             return screen.char('+', curses.COLOR_GREEN, curses.COLOR_BLACK)
         else:
-            return screen.char('+', curses.COLOR_RED, curses.COLOR_BLACK)
+            return screen.char('+', curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
 class event_door (base_floor):
     def __init__(self, event):
@@ -106,4 +106,22 @@ class event_door (base_floor):
         if data.get_event(self.event):
             return screen.char('+', curses.COLOR_GREEN, curses.COLOR_BLACK)
         else:
-            return screen.char('+', curses.COLOR_RED, curses.COLOR_BLACK)
+            return screen.char('+', curses.COLOR_YELLOW, curses.COLOR_BLACK)
+
+class once_door (base_floor):
+    def __init__(self):
+        base_floor.__init__(self)
+        self.open = True
+    def can_pass(self, peo):
+        return self.open and peo.__class__ == people.player
+    def meet(self, peo):
+        if peo.__class__ == people.player:
+            self.open = False
+    def talk(self):
+        if not self.open:
+            screen.infobox('', ['It is closed now.'])
+    def get_face(self):
+        if self.open:
+            return screen.char('.', curses.COLOR_GREEN, curses.COLOR_BLACK)
+        else:
+            return screen.char('+', curses.COLOR_YELLOW, curses.COLOR_BLACK)
