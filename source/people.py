@@ -152,7 +152,7 @@ class pig_king (base_people):
 
 class pig_master (base_people):
     def __init__(self, inmap, px, py):
-        base_people.__init__(self, inmap, px, py, 'Pig Master', 60, 4, 0.7, 30, 'Natural')
+        base_people.__init__(self, inmap, px, py, 'Pig Master', 50, 4, 0.7, 30, 'Natural')
     def gethurt(self, x, peo):
         self.health -= min(self.health, x)
         if self.health == 0:
@@ -225,14 +225,20 @@ class npc_peter (npc): # {{{
         buy1 = data.get_event('shop 1')
         buy2 = data.get_event('shop 2')
         buy3 = data.get_event('shop 3')
+        buy4 = data.get_event('shop 4')
+        buy5 = data.get_event('shop 5')
         screen.infobox('{}({})'.format(self.name, self.camp),
                 ['Hey, buddy.', 'I think you must want to buy something.', 'Donot worry, the shop is safe.',
                     '(1) New teleport point. ({})'.format('bought' if buy1 else 50),
                     '(2) Strength. ({})'.format('bought' if buy2 else 200),
                     '(3) Open the door. ({})'.format('bought' if buy3 else 100),
+                    '(4) Maximum Health. ({})'.format('bought' if buy4 else 150),
+                    '(5) {} ({})'.format(
+                        'New teleport point.' if data.get_event('kill pig master') else '???',
+                        'bought' if buy5 else 50),
                     ])
         screen.refresh()
-        cs = screen.choose('123', True)
+        cs = screen.choose('12345', True)
         if cs == ord('1'):
             if not buy1 and data.tryusemoney(50):
                 data.add_event('shop 1')
@@ -251,6 +257,20 @@ class npc_peter (npc): # {{{
                 data.add_event('shop 3')
             else:
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
+        if cs == ord('4'):
+            if not buy4 and data.tryusemoney(150):
+                data.add_event('shop 4')
+                data.register.peo.health_max += 5
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
+        if cs == ord('5'):
+            if data.get_event('kill pig master') and not buy5 and data.tryusemoney(50):
+                data.add_event('shop 5')
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), [
+                    'Humm... You must be kidding me.',
+                    'Maybe you should kill the Pig Master.',
+                    ])
 # }}}
 
 class player (base_people): # {{{

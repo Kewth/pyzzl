@@ -78,7 +78,8 @@ class trans (base_floor):
         if peo.__class__ == people.player:
             peo.px = self.newx
             peo.py = self.newy
-            peo.inmap = self.newmap # only a class
+            if self.newmap:
+                peo.inmap = self.newmap # only a class
     def get_face(self):
         return screen.char('O', curses.COLOR_BLUE, curses.COLOR_WHITE)
 

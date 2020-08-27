@@ -78,6 +78,9 @@ class main_city (base_map):
             self.floor_map[0][0] = floor.trans(6, 0, spring_gallery)
         else:
             self.floor_map[0][0] = floor.trans(0, 0, spring_gallery)
+        if data.get_event('shop 5'):
+            # TODO: 新传送点
+            self.floor_map[1][0] = floor.trans(1, 1, None)
 
 class spring_gallery (base_map):
     def __init__(self):
@@ -109,8 +112,14 @@ class spring_gallery (base_map):
                 self.floor_map[x][y] = floor.grass()
         for y in range(1, 5):
             self.floor_map[10][y] = floor.wall()
-        for y in range(0, 5):
+        for y in range(0, 4):
             self.floor_map[15][y] = floor.wall()
+            self.floor_map[16][y] = floor.wall()
+        self.floor_map[15][4] = floor.event_door('kill pig master')
+        self.floor_map[16][4] = floor.event_door('kill pig master')
+        self.floor_map[17][0] = floor.trans(6, 0, None)
+        for y in range(0, 5):
+            self.floor_map[18][y] = floor.wall()
         self.floor_map[10][0] = floor.once_door()
         people.pig_master(self, 11, 4)
         # 传送点
