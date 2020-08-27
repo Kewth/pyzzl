@@ -17,10 +17,19 @@ def work(stdscr):
         data.register(player)
         if os.path.exists('data/default'):
             data.init('default')
-        city = Map.main_city()
+        if player.inmap == None:
+            city = Map.main_city()
+            player.px = 5
+            player.py = 5
+        else:
+            dic = {
+                    'Main City': Map.main_city,
+                    'Spring Galery': Map.spring_gallery,
+                    'Pig Master Avenue': Map.pig_master_avenue,
+                    'Ancient Palace': Map.ancient_palace,
+                    }
+            city = dic[player.inmap]()
         player.inmap = city
-        player.px = 5
-        player.py = 5
         city.add_people(player)
         screen.clear()
         screen.write(20, 20, city.name)

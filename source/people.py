@@ -218,6 +218,17 @@ class npc_white (npc): # {{{
                         ['I am coufused.'])
 # }}}
 
+class npc_pigger (npc): # {{{
+    def __init__(self, inmap, px, py):
+        npc.__init__(self, inmap, px, py, 'Pigger')
+    def talk(self):
+        screen.infobox('{}({})'.format(self.name, self.camp),
+                ['Unbelievable, I haven\'t seen any other humans here for a long time.',
+                    'The Pig Master Avenue is crazy, I thought no one could pass it.',
+                    'By the way, your position is saved automatically.'])
+        data.save_pos()
+# }}}
+
 class npc_peter (npc): # {{{
     def __init__(self, inmap, px, py):
         npc.__init__(self, inmap, px, py, 'Peter')

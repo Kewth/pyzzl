@@ -32,7 +32,7 @@ class base_map:
                 return peo
         return None
 
-class main_city (base_map):
+class main_city (base_map): # {{{
     def __init__(self):
         base_map.__init__(self, 50, 80, 'Main City')
         for x in range(self.LINE):
@@ -74,15 +74,17 @@ class main_city (base_map):
         self.floor_map[24][24] = floor.wall()
         self.floor_map[15][15] = floor.info(['In front of you is the king\'s altar.', 'Notice the trap, once you touch it you will get hurted.'])
         # 传送点
+        for x in range(1, self.LINE, 2):
+            self.floor_map[x][0] = floor.empty()
         if data.get_event('shop 1'):
             self.floor_map[0][0] = floor.trans(6, 0, spring_gallery)
         else:
             self.floor_map[0][0] = floor.trans(0, 0, spring_gallery)
         if data.get_event('shop 5'):
-            # TODO: 新传送点
-            self.floor_map[1][0] = floor.trans(1, 1, None)
+            self.floor_map[2][0] = floor.trans(0, 2, pig_master_avenue)
+# }}}
 
-class spring_gallery (base_map):
+class spring_gallery (base_map): # {{{
     def __init__(self):
         base_map.__init__(self, 100, 5, 'Spring Gallery')
         for x in range(self.LINE):
@@ -127,3 +129,68 @@ class spring_gallery (base_map):
             self.floor_map[6][0] = floor.trans(0, 0, main_city)
         else:
             self.floor_map[0][0] = floor.trans(0, 0, main_city)
+# }}}
+
+class pig_master_avenue (base_map): # {{{
+    def __init__(self):
+        base_map.__init__(self, 50, 5, 'Pig Master Avenue')
+        for x in range(self.LINE):
+            self.floor_map[x][0] = floor.grass()
+            self.floor_map[x][2] = floor.spa()
+            self.floor_map[x][4] = floor.grass()
+            if x % 3 == 2:
+                self.floor_map[x][1] = floor.wall()
+                self.floor_map[x][3] = floor.wall()
+            else:
+                self.floor_map[x][1] = floor.empty()
+                self.floor_map[x][3] = floor.empty()
+            people.pig_master(self, x, 0)
+            people.pig_master(self, x, 4)
+        # 传送点
+        self.floor_map[0][2] = floor.trans(2, 0, main_city)
+        self.floor_map[49][2] = floor.trans(0, 0, ancient_palace)
+# }}}
+
+class ancient_palace (base_map): # {{{
+    def __init__(self):
+        charmap = '''
+1........     2...........          3............
+..      ..          .             ...            
+.        ..         .            ..              
+.         ..        .            .               
+.          .        .            .               
+.          .        .            .               
+.         ..        .            .               
+.     .....         .            .               
+.......             .            .               
+.                   .            .               
+.                   .            .               
+.                   .            .               
+.                   .            .               
+.                   .            .         ......
+.                   .            .        .. .  .
+.                   .            .       ..     .
+.                   .            .              .
+.                   .            .              .
+.                   .            ..             .
+.                   .             .            ..
+4            ...............      .............. 
+'''[1:-1].split('\n')
+        base_map.__init__(self, len(charmap), len(charmap[0]), 'Ancient Palace')
+        for x in range(self.LINE):
+            for y in range(self.COL):
+                if charmap[x][y] == '.':
+                    self.floor_map[x][y] = floor.grass()
+                elif charmap[x][y] == ' ':
+                    self.floor_map[x][y] = floor.empty()
+                elif charmap[x][y] == '1':
+                    self.floor_map[x][y] = floor.trans(49, 2, pig_master_avenue)
+                elif charmap[x][y] == '2':
+                    self.floor_map[x][y] = floor.trans(49, 2, pig_master_avenue)
+                elif charmap[x][y] == '3':
+                    self.floor_map[x][y] = floor.trans(49, 2, pig_master_avenue)
+                elif charmap[x][y] == '4':
+                    self.floor_map[x][y] = floor.trans(2, 0, main_city)
+        # NPC
+        people.npc_pigger(self, 0, 2)
+# }}}
