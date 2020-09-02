@@ -27,6 +27,7 @@ def work(stdscr):
                     'Spring Galery': Map.spring_gallery,
                     'Pig Master Avenue': Map.pig_master_avenue,
                     'Ancient Palace': Map.ancient_palace,
+                    'Secret Room of Ancient Palace': Map.palace_secret_room,
                     }
             city = dic[player.inmap]()
         player.inmap = city
@@ -51,6 +52,8 @@ def work(stdscr):
                 screen.write(20, 20, city.name)
                 screen.refresh(False)
                 time.sleep(1)
+            else:
+                city.todo()
         screen.clear()
         screen.write(20, 20, 'You are dead.')
         screen.write(21, 20, 'Aricheve is not saved.')

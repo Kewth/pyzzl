@@ -126,3 +126,26 @@ class once_door (base_floor):
             return screen.char('.', curses.COLOR_GREEN, curses.COLOR_BLACK)
         else:
             return screen.char('+', curses.COLOR_YELLOW, curses.COLOR_BLACK)
+
+class hide_grass (grass):
+    def __init__(self):
+        grass.__init__(self)
+    def get_face(self):
+        return screen.char(' ')
+
+class hide_wall (wall):
+    def __init__(self):
+        wall.__init__(self)
+    def get_face(self):
+        return screen.char(' ')
+
+class archive_point (base_floor):
+    def __init__(self):
+        base_floor.__init__(self)
+    def meet (self, peo):
+        if peo.__class__ == people.player:
+            screen.infobox('Archive point', ['Your position is saved', 'And the archive is saved to "default".'])
+            data.save_pos()
+            data.save('default')
+    def get_face(self):
+        return screen.char('A', curses.COLOR_WHITE, curses.COLOR_YELLOW)

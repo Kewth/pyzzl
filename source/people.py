@@ -34,6 +34,14 @@ def walk_find(self, dis):
     if check(px + 1, px + dis, py, py, px + 1, py): return
     if check(px + 1, px + dis, py + 1, py + dis, px + 1, py + 1): return
 
+def freetime():
+    return time.time() - freetime.skip
+def freetime_lock():
+    freetime.skip -= time.time()
+def freetime_unlock():
+    freetime.skip += time.time()
+freetime.skip = 0
+
 class base_people: # {{{
     def __init__(self, inmap, px, py, name, health, attack, speed, money, camp):
         self.inmap = inmap
@@ -46,7 +54,7 @@ class base_people: # {{{
         self.speed = speed
         self.money = money
         self.camp = camp
-        self.clock = time.time()
+        self.clock = freetime()
         if inmap is not None:
             self.inmap.add_people(self)
         self.will_attack = False
@@ -84,7 +92,7 @@ class base_people: # {{{
             if self.inmap.trygoto(self, xy[0], xy[1]):
                 return
     def todo(self):
-        if time.time() > self.clock + self.speed:
+        if freetime() > self.clock + self.speed:
             self.clock += self.speed
             if not self.todo_attack():
                 self.will_attack = False
@@ -202,10 +210,12 @@ class npc_white (npc): # {{{
         screen.infobox('{}({})'.format(self.name, self.camp),
                 ['My name is white.', 'I can teach you what to do.',
                     'Remember check the exclamation marks first.',
-                    'You can quit by press Ctrl-C any time and the aricheve will be saved automatically.',
+                    'You can quit by press Ctrl-C any time and the archive will be saved automatically.',
                     'By the way, do you want to read archive or write archive? (r/w)'])
         screen.refresh()
+        freetime_lock()
         cs = screen.choose('rw', True)
+        freetime_unlock()
         if cs == ord('r'):
             name = screen.getstr(20, 5, 'type the archive name: ')
             if not data.init(name):
@@ -225,8 +235,7 @@ class npc_pigger (npc): # {{{
         screen.infobox('{}({})'.format(self.name, self.camp),
                 ['Unbelievable, I haven\'t seen any other humans here for a long time.',
                     'The Pig Master Avenue is crazy, I thought no one could pass it.',
-                    'By the way, your position is saved automatically.'])
-        data.save_pos()
+                    'By the way, you can save your archive by crossing the archive point. It may be helpful.'])
 # }}}
 
 class npc_peter (npc): # {{{
@@ -249,7 +258,9 @@ class npc_peter (npc): # {{{
                         'bought' if buy5 else 50),
                     ])
         screen.refresh()
+        freetime_lock()
         cs = screen.choose('12345', True)
+        freetime_unlock()
         if cs == ord('1'):
             if not buy1 and data.tryusemoney(50):
                 data.add_event('shop 1')

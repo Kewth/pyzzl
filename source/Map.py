@@ -1,6 +1,7 @@
 '地图'
 
 import time
+import random
 from pyzzl import floor, people, data
 
 class base_map:
@@ -31,6 +32,8 @@ class base_map:
             if peo.px == px and peo.py == py:
                 return peo
         return None
+    def todo(self):
+        pass
 
 class main_city (base_map): # {{{
     def __init__(self):
@@ -154,9 +157,9 @@ class pig_master_avenue (base_map): # {{{
 class ancient_palace (base_map): # {{{
     def __init__(self):
         charmap = '''
-1........     2...........          3............
-..      ..          .             ...            
-.        ..         .            ..              
+1.@......     2...........          3............
+...     ..          .             ...            
+..A      ..         .            ..              
 .         ..        .            .               
 .          .        .            .               
 .          .        .            .               
@@ -167,14 +170,14 @@ class ancient_palace (base_map): # {{{
 .                   .            .               
 .                   .            .               
 .                   .            .               
-.                   .            .         ......
-.                   .            .        .. .  .
-.                   .            .       ..     .
-.                   .            .              .
-.                   .            .              .
-.                   .            ..             .
-.                   .             .            ..
-4            ...............      .............. 
+.  #######          .            .         ......
+.  //////#          .            .        .. .  .
+.  ~~~~~/#          .            .       ..     .
+.??~~~~~/#          .            .              .
+.??~~~~~/#          .            .              .
+.  ~~~~~/#          .            ..             .
+.  ////?/#          .             .            ..
+4  ####5##   ...............      .............. 
 '''[1:-1].split('\n')
         base_map.__init__(self, len(charmap), len(charmap[0]), 'Ancient Palace')
         for x in range(self.LINE):
@@ -183,6 +186,16 @@ class ancient_palace (base_map): # {{{
                     self.floor_map[x][y] = floor.grass()
                 elif charmap[x][y] == ' ':
                     self.floor_map[x][y] = floor.empty()
+                elif charmap[x][y] == '~':
+                    self.floor_map[x][y] = floor.spa()
+                elif charmap[x][y] == '#':
+                    self.floor_map[x][y] = floor.wall()
+                elif charmap[x][y] == '?':
+                    self.floor_map[x][y] = floor.hide_grass()
+                elif charmap[x][y] == '/':
+                    self.floor_map[x][y] = floor.hide_wall()
+                elif charmap[x][y] == 'A':
+                    self.floor_map[x][y] = floor.archive_point()
                 elif charmap[x][y] == '1':
                     self.floor_map[x][y] = floor.trans(49, 2, pig_master_avenue)
                 elif charmap[x][y] == '2':
@@ -191,6 +204,59 @@ class ancient_palace (base_map): # {{{
                     self.floor_map[x][y] = floor.trans(49, 2, pig_master_avenue)
                 elif charmap[x][y] == '4':
                     self.floor_map[x][y] = floor.trans(2, 0, main_city)
-        # NPC
-        people.npc_pigger(self, 0, 2)
+                elif charmap[x][y] == '5':
+                    self.floor_map[x][y] = floor.trans(1, 4, palace_secret_room)
+                elif charmap[x][y] == '@':
+                    self.floor_map[x][y] = floor.grass()
+                    people.npc_pigger(self, x, y)
+# }}}
+
+class palace_secret_room (base_map): # {{{
+    def __init__(self):
+        charmap = '''
+###########################################
+#p .1. p###2..........................###.#
+#  ...  ####..........................###.#
+#.......####..........................###.#
+#... ...####............PP............###.#
+#.......####..........................###.#
+#  ...  ####..........................###.#
+#p ... p####..............................#
+###########################################
+'''[1:-1].split('\n')
+        base_map.__init__(self, len(charmap), len(charmap[0]), 'Secret Room of Ancient Palace')
+        for x in range(self.LINE):
+            for y in range(self.COL):
+                if charmap[x][y] == '.':
+                    self.floor_map[x][y] = floor.grass()
+                elif charmap[x][y] == ' ':
+                    self.floor_map[x][y] = floor.empty()
+                elif charmap[x][y] == '#':
+                    self.floor_map[x][y] = floor.wall()
+                elif charmap[x][y] == 'p':
+                    self.floor_map[x][y] = floor.grass()
+                    people.pig(self, x, y)
+                elif charmap[x][y] == 'P':
+                    self.floor_map[x][y] = floor.grass()
+                    people.pig_master(self, x, y)
+                elif charmap[x][y] == '1':
+                    self.floor_map[x][y] = floor.trans(20, 10, ancient_palace)
+                elif charmap[x][y] == '2':
+                    self.floor_map[x][y] = floor.trans(4, 4, None)
+        self.change_clock = time.time() + 2
+    def todo(self):
+        def has_pig():
+            for peo in self.people_list:
+                if peo.__class__ == people.pig:
+                    return True
+        if not has_pig():
+            self.floor_map[4][4] = floor.trans(1, 11, None)
+        if time.time() > self.change_clock:
+            self.change_clock += 2
+            for x in range(1, 8):
+                for y in range(12, 38):
+                    if random.randint(1, 100) <= 40:
+                        self.floor_map[x][y] = floor.trans(1, 11, None)
+                    else:
+                        self.floor_map[x][y] = floor.grass()
 # }}}
