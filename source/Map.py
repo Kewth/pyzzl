@@ -240,7 +240,7 @@ class palace_secret_room (base_map): # {{{
                     self.floor_map[x][y] = floor.grass()
                     people.pig_master(self, x, y)
                 elif charmap[x][y] == '1':
-                    self.floor_map[x][y] = floor.trans(20, 10, ancient_palace)
+                    self.floor_map[x][y] = floor.trans(20, 7, ancient_palace)
                 elif charmap[x][y] == '2':
                     self.floor_map[x][y] = floor.trans(4, 4, None)
         self.change_clock = time.time() + 2
