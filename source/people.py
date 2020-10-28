@@ -77,15 +77,17 @@ class base_people: # {{{
             for xy in self.atk_xy_list:
                 dx, dy = xy
                 peo = self.inmap.get_people(self.px + dx, self.py + dy)
+                peo_defence = False
                 if peo is not None and peo.camp != self.camp:
-                    peo.gethurt(self.attack, self)
-                self.inmap.set_atk_map(self.px + dx, self.py + dy)
+                    peo_defence = not peo.gethurt(self.attack, self)
+                if not peo_defence:
+                    self.inmap.set_atk_map(self.px + dx, self.py + dy)
         else:
             self.update_atk_xy_list()
             if len(self.atk_xy_list) != 0:
                 res = True
                 self.will_attack = True
-                self.clock += 0.5 - self.speed
+                self.clock += 0.8 - self.speed
         return res
     def todo_walk(self):
         for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
@@ -105,6 +107,7 @@ class base_people: # {{{
             if peo is not None:
                 peo.money += self.money
             self.money = 0
+        return True
     def talk(self):
         screen.infobox('{}({})'.format(self.name, self.camp), ['!(#!(*%$*!@&$)(%*@', '(His language is unable to understand.)'])
     def getcure(self, x):
@@ -155,6 +158,7 @@ class pig_king (base_people):
             self.money = 0
             if peo.__class__ == player:
                 data.add_event('kill pig king')
+        return True
     def get_face(self):
         return screen.char('P')
 
@@ -169,6 +173,7 @@ class pig_master (base_people):
             self.money = 0
             if peo.__class__ == player:
                 data.add_event('kill pig master')
+        return True
     def update_atk_xy_list(self):
         lis = make_xy_list(-2, 2, -2, 2)
         lis.remove((0, 0))
@@ -393,7 +398,10 @@ class player (base_people): # {{{
         if time.time() > self.keep_clock:
             self.mode = 'walk'
 
-        c = screen.ifgetch(0.1)
+        # c = screen.ifgetch(0.1)
+        c = screen.ifgetch(0)
+        if self.mode == 'tired':
+            c = curses.ERR
 
         if c == ord('w'):
             if self.mode == 'attack':
@@ -427,7 +435,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px, self.py - 1)
-        if c == ord('j') and self.mode != 'tired':
+        if c == ord('j'):
             self.mode = 'attack'
             self.keep_clock = time.time() + 1
         if c == ord('t'):
@@ -438,17 +446,26 @@ class player (base_people): # {{{
                 self.mode = 'walk'
             else:
                 self.mode = 'defence'
-                self.keep_clock = time.time() + 0.2
+                self.keep_clock = time.time() + 0.4
 
     def gethurt(self, x, peo):
         if self.mode == 'defence':
-            x = 0
+            self.mode = 'tired'
+            self.keep_clock = time.time() + 0.3
+            return False
         self.health -= min(self.health, x)
         if self.health == 0:
             if peo is not None:
                 peo.money += self.money
             self.money = 0
+        return True
 
     def get_face(self):
+        if self.mode == 'tired':
+            return screen.char('@', curses.COLOR_YELLOW, curses.COLOR_BLUE)
+        if self.mode == 'defence':
+            return screen.char('@', curses.COLOR_WHITE, curses.COLOR_YELLOW)
+        if self.mode == 'attack':
+            return screen.char('@', curses.COLOR_RED, curses.COLOR_BLUE)
         return screen.char('@', curses.COLOR_WHITE, curses.COLOR_BLUE)
 # }}}

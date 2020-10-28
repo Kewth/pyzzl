@@ -215,13 +215,13 @@ class palace_secret_room (base_map): # {{{
     def __init__(self):
         charmap = '''
 ###########################################
-#p .1. p###2..........................###.#
-#  ...  ####..........................###.#
-#.......####..........................###.#
+#p .1. p###2............  ............###.#
+#  ...  ####............  ............###.#
+#.......####............  ............###.#
 #... ...####............PP............###.#
-#.......####..........................###.#
-#  ...  ####..........................###.#
-#p ... p####..............................#
+#.......####............  ............###.#
+#  ...  ####............  ............###.#
+#p ... p####............  ................#
 ###########################################
 '''[1:-1].split('\n')
         base_map.__init__(self, len(charmap), len(charmap[0]), 'Secret Room of Ancient Palace')
@@ -255,8 +255,10 @@ class palace_secret_room (base_map): # {{{
             self.change_clock += 2
             for x in range(1, 8):
                 for y in range(12, 38):
-                    if random.randint(1, 100) <= 40:
-                        self.floor_map[x][y] = floor.trans(1, 11, None)
-                    else:
-                        self.floor_map[x][y] = floor.grass()
+                    if y != 24 and y != 25:
+                        if random.randint(1, 100) <= 10:
+                            # self.floor_map[x][y] = floor.trans(1, 11, None)
+                            self.floor_map[x][y] = floor.low_wall()
+                        else:
+                            self.floor_map[x][y] = floor.grass()
 # }}}

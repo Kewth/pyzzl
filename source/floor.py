@@ -34,6 +34,14 @@ class wall (base_floor):
     def get_face(self):
         return screen.char('#', curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
+class low_wall (base_floor):
+    def __init__(self):
+        base_floor.__init__(self)
+    def can_pass(self, peo):
+        return False
+    def get_face(self):
+        return screen.char('=', curses.COLOR_YELLOW, curses.COLOR_BLACK)
+
 class trap (base_floor):
     def __init__(self):
         base_floor.__init__(self)
