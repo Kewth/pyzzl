@@ -306,6 +306,7 @@ class player (base_people): # {{{
         self.mode = 'walk'
         self.keep_clock = 0
         self.events = set()
+        self.direction = 'd'
 
     def todo (self):
         # 处理视野
@@ -411,6 +412,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px - 1, self.py)
+            self.direction = 'w'
         if c == ord('s'):
             if self.mode == 'attack':
                 doattack('s')
@@ -419,6 +421,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px + 1, self.py)
+            self.direction = 's'
         if c == ord('d'):
             if self.mode == 'attack':
                 doattack('d')
@@ -427,6 +430,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px, self.py + 1)
+            self.direction = 'd'
         if c == ord('a'):
             if self.mode == 'attack':
                 doattack('a')
@@ -435,6 +439,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px, self.py - 1)
+            self.direction = 'a'
         if c == ord('j'):
             self.mode = 'attack'
             self.keep_clock = time.time() + 1
