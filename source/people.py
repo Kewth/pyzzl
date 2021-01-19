@@ -60,6 +60,7 @@ class base_people: # {{{
         self.will_attack = False
         self.atk_xy_list = []
     def update_atk_xy_list(self):
+        # 默认在 3x3 范围内搜索不同阵营的生物
         lis = make_xy_list(-1, 1, -1, 1)
         lis.remove((0, 0))
         self.atk_xy_list = []
@@ -137,7 +138,7 @@ class pig_fighter (base_people):
 
 class pig_king (base_people):
     def __init__(self, inmap, px, py):
-        base_people.__init__(self, inmap, px, py, 'King of Pig', 15, 0, 5.0, 5, 'Natural')
+        base_people.__init__(self, inmap, px, py, 'King of Pigs', 15, 0, 5.0, 5, 'Natural')
     def update_atk_xy_list(self):
         pass
     def todo_attack(self):
@@ -198,13 +199,47 @@ class pig_master (base_people):
 
 # }}}
 
+class base_wave (base_people):
+    def __init__(self, inmap, px, py, attack, master, dx, dy):
+        base_people.__init__(self, inmap, px, py, 'Wave', 1, attack, 0.05, 0, master.camp)
+        self.master = master
+        self.dx = dx
+        self.dy = dy
+    def todo_attack(self):
+        peo = self.inmap.get_people(self.px + self.dx, self.py + self.dy)
+        if peo is None:
+            return False
+        self.health = 0
+        if peo.camp == self.camp:
+            return True
+        peo_defence = not peo.gethurt(self.attack, self.master)
+        if not peo_defence:
+            self.inmap.set_atk_map(self.px + self.dx, self.py + self.dy)
+        return True
+    def todo_walk(self):
+        if self.inmap.trygoto(self, self.px + self.dx, self.py + self.dy):
+            return
+        self.health = 0
+    def get_face(self):
+        if self.camp == 'Neutral':
+            return screen.char('*', curses.COLOR_BLUE)
+        else:
+            return screen.char('*', curses.COLOR_RED)
+    def gethurt(self, x, peo):
+        if peo is None:
+            return False
+        self.health -= min(self.health, x)
+        return True
+
 class npc (base_people):
     def __init__(self, inmap, px, py, name):
         base_people.__init__(self, inmap, px, py, name, 10000, 0, 10.0, 0, 'Neutral')
     def todo(self):
         self.health = self.health_max
     def talk(self):
-        screen.infobox('{}({})'.format(self.name, self.camp), ['I am too tired to talk with you...'])
+        screen.infobox('{}({})'.format(self.name, self.camp),
+                # ['我不想和你废话。。。'])
+                ['I am too tired to talk with you...'])
     def get_face(self):
         return screen.char('@')
 
@@ -213,7 +248,7 @@ class npc_white (npc): # {{{
         npc.__init__(self, inmap, px, py, 'White')
     def talk(self):
         screen.infobox('{}({})'.format(self.name, self.camp),
-                ['My name is white.', 'I can teach you what to do.',
+                ['My name is white.', 'Maybe I can teach you what to do.',
                     'Remember check the exclamation marks first.',
                     'You can quit by press Ctrl-C any time and the archive will be saved automatically.',
                     'By the way, do you want to read archive or write archive? (r/w)'])
@@ -238,6 +273,9 @@ class npc_pigger (npc): # {{{
         npc.__init__(self, inmap, px, py, 'Pigger')
     def talk(self):
         screen.infobox('{}({})'.format(self.name, self.camp),
+                # ['难以置信！我已经很长时间没有在这里见到其他人了。',
+                #     '猪大师长廊过于疯狂，我认为没有什么人能够安全通过。',
+                #     '对了，你可以在前方的存档点保存当前进度，这很有用。'])
                 ['Unbelievable, I haven\'t seen any other humans here for a long time.',
                     'The Pig Master Avenue is crazy, I thought no one could pass it.',
                     'By the way, you can save your archive by crossing the archive point. It may be helpful.'])
@@ -303,6 +341,8 @@ class npc_peter (npc): # {{{
 class player (base_people): # {{{
     def __init__(self):
         base_people.__init__(self, None, 0, 0, 'Adventurer', 20, 3, 0.0, 0, 'Neutral')
+        self.magic = self.magic_max = 10
+        self.magic_clock = time.time()
         self.mode = 'walk'
         self.keep_clock = 0
         self.events = set()
@@ -344,6 +384,10 @@ class player (base_people): # {{{
                             face = peo.get_face()
                 screen.write_ch(dx, dy, face)
 
+        while time.time() > self.magic_clock + 1:
+            self.magic = min(self.magic + 1, self.magic_max)
+            self.magic_clock += 1
+
         screen.write(1, 0, ' ' * 14)
         screen.write(2, 0, ' ' * 14)
         screen.write(3, 0, ' ' * 14)
@@ -351,17 +395,19 @@ class player (base_people): # {{{
         screen.write(0, len(self.inmap.name), '|')
         screen.write(1, 0, '-' * len(self.inmap.name) + '+')
         screen.write(2, 0, 'HP: {}/{}'.format(self.health, self.health_max))
-        screen.write(3, 0, 'ATK: {}'.format(self.attack))
-        screen.write(4, 0, 'Mon: {}'.format(self.money))
-        screen.write(5, 0, 'Mode: {}'.format(self.mode))
-        screen.write(6, 0, 'Pos: {}, {}'.format(self.px, self.py))
+        screen.write(3, 0, 'MP: {}/{}'.format(self.magic, self.magic_max))
+        screen.write(4, 0, 'ATK: {}'.format(self.attack))
+        screen.write(5, 0, 'Mon: {}'.format(self.money))
+        screen.write(6, 0, 'Mode: {}'.format(self.mode))
+        screen.write(7, 0, 'Pos: {}, {}'.format(self.px, self.py))
         screen.write(1, 13, '+')
         screen.write(2, 13, '|')
         screen.write(3, 13, '|')
         screen.write(4, 13, '|')
         screen.write(5, 13, '|')
         screen.write(6, 13, '|')
-        screen.write(7, 0, '-' * 13 + '+')
+        screen.write(7, 13, '|')
+        screen.write(8, 0, '-' * 13 + '+')
         screen.refresh()
 
         def doattack(flag):
@@ -387,6 +433,37 @@ class player (base_people): # {{{
             screen.refresh()
             time.sleep(0.1)
 
+        def dospell(c):
+            if self.magic < 3:
+                self.mode = 'walk'
+                return
+            if c == ord('w'):
+                dx, dy = -1, 0
+            elif c == ord('s'):
+                dx, dy = +1, 0
+            elif c == ord('d'):
+                dx, dy = 0, +1
+            elif c == ord('a'):
+                dx, dy = 0, -1
+            else:
+                self.mode = 'walk'
+                return
+            self.magic -= 3
+            spell_atk = self.attack
+            peo = self.inmap.get_people(self.px + dx, self.py + dy)
+            self.mode = 'tired'
+            self.keep_clock = time.time() + 0.2
+            if peo is not None:
+                screen.write_ch(px + dx, py + dy,
+                        screen.char('X', curses.COLOR_WHITE, curses.COLOR_BLUE))
+                peo.gethurt(spell_atk, self)
+                screen.refresh()
+                time.sleep(0.1)
+            else:
+                newwave = base_wave(self.inmap, self.px + dx, self.py + dy,
+                        spell_atk, self, dx, dy)
+                screen.refresh()
+
         def trytalk(x, y):
             if x in range(self.inmap.LINE) and y in range(self.inmap.COL):
                 peo = self.inmap.get_people(x, y)
@@ -402,6 +479,9 @@ class player (base_people): # {{{
         # c = screen.ifgetch(0.1)
         c = screen.ifgetch(0)
         if self.mode == 'tired':
+            c = curses.ERR
+        if c != curses.ERR and self.mode == 'spell':
+            dospell(c)
             c = curses.ERR
 
         if c == ord('w'):
@@ -442,6 +522,9 @@ class player (base_people): # {{{
             self.direction = 'a'
         if c == ord('j'):
             self.mode = 'attack'
+            self.keep_clock = time.time() + 1
+        if c == ord('h'):
+            self.mode = 'spell'
             self.keep_clock = time.time() + 1
         if c == ord('t'):
             self.mode = 'talk'
