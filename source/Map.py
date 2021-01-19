@@ -215,7 +215,7 @@ class palace_secret_room (base_map): # {{{
     def __init__(self):
         charmap = '''
 ###########################################
-#p .1. p###2............  ............###.#
+#p .1. p###2............  ............###3#
 #  ...  ####............  ............###.#
 #.......####............  ............###.#
 #... ...####............PP............###.#
@@ -243,6 +243,8 @@ class palace_secret_room (base_map): # {{{
                     self.floor_map[x][y] = floor.trans(20, 7, ancient_palace)
                 elif charmap[x][y] == '2':
                     self.floor_map[x][y] = floor.trans(4, 4, None)
+                elif charmap[x][y] == '3':
+                    self.floor_map[x][y] = floor.trans(1, 1, palace_secret_room_2)
         self.change_clock = time.time() + 2
     def todo(self):
         def has_pig():
@@ -261,4 +263,38 @@ class palace_secret_room (base_map): # {{{
                             self.floor_map[x][y] = floor.low_wall()
                         else:
                             self.floor_map[x][y] = floor.grass()
+# }}}
+
+class palace_secret_room_2 (base_map): # {{{
+    def __init__(self):
+        charmap = '''
+          #########################
+1~~~~~~~~~+.......................#
+          #.......................#
+          #.......................#
+          #.......................#
+          #.......................#
+          #.......................#
+          #.......................#
+          #......................p#
+          #########################
+'''[1:-1].split('\n')
+        base_map.__init__(self, len(charmap), len(charmap[0]), 'Secret Room of Ancient Palace 2')
+        for x in range(self.LINE):
+            for y in range(self.COL):
+                if charmap[x][y] == '.':
+                    self.floor_map[x][y] = floor.grass()
+                elif charmap[x][y] == ' ':
+                    self.floor_map[x][y] = floor.empty()
+                elif charmap[x][y] == '~':
+                    self.floor_map[x][y] = floor.spa()
+                elif charmap[x][y] == '+':
+                    self.floor_map[x][y] = floor.once_door()
+                elif charmap[x][y] == '#':
+                    self.floor_map[x][y] = floor.wall()
+                elif charmap[x][y] == '1':
+                    self.floor_map[x][y] = floor.trans(1, 3, palace_secret_room)
+                elif charmap[x][y] == 'p':
+                    self.floor_map[x][y] = floor.grass()
+                    people.pig_knight(self, x, y)
 # }}}

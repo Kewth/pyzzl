@@ -28,6 +28,7 @@ def work(stdscr):
                     'Pig Master Avenue': Map.pig_master_avenue,
                     'Ancient Palace': Map.ancient_palace,
                     'Secret Room of Ancient Palace': Map.palace_secret_room,
+                    'Secret Room of Ancient Palace 2': Map.palace_secret_room_2,
                     }
             city = dic[player.inmap]()
         player.inmap = city

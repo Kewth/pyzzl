@@ -18,6 +18,8 @@ pair_lis = [(curses.COLOR_WHITE, curses.COLOR_BLACK)]
 def init(scr, line, col):
     '初始化，返回是否成功'
 
+    curses.COLOR_DARK_RED = 52
+
     global stdscr, LINE, COL
     stdscr = scr
     LINE = line

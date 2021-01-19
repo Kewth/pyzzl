@@ -25,14 +25,15 @@ def walk_find(self, dis):
                     return True
         return False
     px, py = self.px, self.py
-    if check(px - dis, px - 1, py - dis, py - 1, px - 1, py - 1): return
-    if check(px - dis, px - 1, py, py, px - 1, py): return
-    if check(px - dis, px - 1, py + 1, py + dis, px - 1, py + 1): return
-    if check(px, px, py - dis, py - 1, px, py - 1): return
-    if check(px, px, py + 1, py + dis, px, py + 1): return
-    if check(px + 1, px + dis, py - dis, py - 1, px + 1, py - 1): return
-    if check(px + 1, px + dis, py, py, px + 1, py): return
-    if check(px + 1, px + dis, py + 1, py + dis, px + 1, py + 1): return
+    if check(px - dis, px - 1, py - dis, py - 1, px - 1, py - 1): return True
+    if check(px - dis, px - 1, py, py, px - 1, py): return True
+    if check(px - dis, px - 1, py + 1, py + dis, px - 1, py + 1): return True
+    if check(px, px, py - dis, py - 1, px, py - 1): return True
+    if check(px, px, py + 1, py + dis, px, py + 1): return True
+    if check(px + 1, px + dis, py - dis, py - 1, px + 1, py - 1): return True
+    if check(px + 1, px + dis, py, py, px + 1, py): return True
+    if check(px + 1, px + dis, py + 1, py + dis, px + 1, py + 1): return True
+    return False
 
 def freetime():
     return time.time() - freetime.skip
@@ -98,7 +99,7 @@ class base_people: # {{{
         if freetime() > self.clock + self.speed:
             self.clock += self.speed
             if not self.todo_attack():
-                self.will_attack = False
+                # self.will_attack = False
                 self.todo_walk()
     def get_face(self):
         return screen.char('?')
@@ -197,11 +198,107 @@ class pig_master (base_people):
         else:
             return screen.char('P', curses.COLOR_RED, curses.COLOR_BLACK)
 
+class pig_knight (base_people):
+    def __init__(self, inmap, px, py):
+        base_people.__init__(self, inmap, px, py, 'Pig Knight', 100, 3, 0.5, 100, 'Natural')
+        self.attack_mode = 0
+        self.stealth_clock = time.time()
+    def gethurt(self, x, peo):
+        if time.time() < self.stealth_clock:
+            self.stealth_clock = time.time()
+        self.health -= min(self.health, x)
+        if self.health == 0:
+            if peo is not None:
+                peo.money += self.money
+            self.money = 0
+            if peo.__class__ == player:
+                data.add_event('kill pig knight')
+        return True
+    def todo_attack(self):
+        if time.time() < self.stealth_clock:
+            return False
+        res = False
+        if self.will_attack:
+            res = True
+            self.will_attack = False
+            if self.attack_mode == 1:
+                for xy in self.atk_xy_list:
+                    dx, dy = xy
+                    peo = self.inmap.get_people(self.px + dx, self.py + dy)
+                    peo_defence = False
+                    if peo is not None and peo.camp != self.camp:
+                        peo_defence = not peo.gethurt(self.attack, self)
+                    if not peo_defence:
+                        self.inmap.set_atk_map(self.px + dx, self.py + dy)
+                self.stealth_clock = time.time() + 3
+            elif self.attack_mode == 2:
+                xy_list = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                for xy in xy_list:
+                    dx, dy = xy
+                    newwave = base_wave(self.inmap, self.px + dx, self.py + dy,
+                            self.attack, self, dx, dy)
+        else:
+            self.update_atk_xy_list()
+            if self.atk_xy_list:
+                res = True
+                self.will_attack = True
+                self.attack_mode = 1
+                self.clock += 0.8 - self.speed
+        return res
+    def update_atk_xy_list(self):
+        lis = make_xy_list(-2, 2, -2, 2)
+        lis.remove((0, 0))
+        lis.remove((-2, -2))
+        lis.remove((-2, +2))
+        lis.remove((+2, -2))
+        lis.remove((+2, +2))
+        self.atk_xy_list = []
+        for xy in lis:
+            dx, dy = xy
+            peo = self.inmap.get_people(self.px + dx, self.py + dy)
+            if peo is not None and peo.camp != self.camp:
+                self.atk_xy_list = lis
+                return
+    def todo_walk(self):
+        if time.time() < self.stealth_clock:
+            for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
+                if self.inmap.trygoto(self, xy[0], xy[1]):
+                    return
+            return
+        if random.randint(1, 100) <= 20:
+            self.will_attack = True
+            self.attack_mode = 2
+            self.clock += 0.8 - self.speed
+            return
+        if walk_find(self, 5):
+            pass
+        else:
+            for xy in make_xy_list(self.px - 1, self.px + 1, self.py - 1, self.py + 1):
+                if self.inmap.trygoto(self, xy[0], xy[1]):
+                    return
+    def get_face(self):
+        if time.time() < self.stealth_clock:
+            return screen.char('.', curses.COLOR_GREEN)
+        if self.will_attack:
+            if self.attack_mode == 1:
+                return screen.char('D', curses.COLOR_RED, curses.COLOR_BLACK)
+            elif self.attack_mode == 2:
+                return screen.char('D', curses.COLOR_DARK_RED, curses.COLOR_BLACK)
+        else:
+            return screen.char('D')
+
 # }}}
 
 class base_wave (base_people):
     def __init__(self, inmap, px, py, attack, master, dx, dy):
+        peo = inmap.get_people(px, py)
+        if peo is not None:
+            self.success = False
+            if peo.camp != master.camp and peo.gethurt(attack, master):
+                inmap.set_atk_map(px, py)
+            return
         base_people.__init__(self, inmap, px, py, 'Wave', 1, attack, 0.05, 0, master.camp)
+        self.success = True
         self.master = master
         self.dx = dx
         self.dy = dy
@@ -212,8 +309,7 @@ class base_wave (base_people):
         self.health = 0
         if peo.camp == self.camp:
             return True
-        peo_defence = not peo.gethurt(self.attack, self.master)
-        if not peo_defence:
+        if peo.gethurt(self.attack, self.master):
             self.inmap.set_atk_map(self.px + self.dx, self.py + self.dy)
         return True
     def todo_walk(self):
@@ -449,20 +545,12 @@ class player (base_people): # {{{
                 self.mode = 'walk'
                 return
             self.magic -= 3
-            spell_atk = self.attack
             peo = self.inmap.get_people(self.px + dx, self.py + dy)
             self.mode = 'tired'
             self.keep_clock = time.time() + 0.2
-            if peo is not None:
-                screen.write_ch(px + dx, py + dy,
-                        screen.char('X', curses.COLOR_WHITE, curses.COLOR_BLUE))
-                peo.gethurt(spell_atk, self)
-                screen.refresh()
-                time.sleep(0.1)
-            else:
-                newwave = base_wave(self.inmap, self.px + dx, self.py + dy,
-                        spell_atk, self, dx, dy)
-                screen.refresh()
+            newwave = base_wave(self.inmap, self.px + dx, self.py + dy,
+                    self.attack, self, dx, dy)
+            screen.refresh()
 
         def trytalk(x, y):
             if x in range(self.inmap.LINE) and y in range(self.inmap.COL):
