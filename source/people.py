@@ -203,6 +203,8 @@ class pig_knight (base_people):
         base_people.__init__(self, inmap, px, py, 'Pig Knight', 100, 3, 0.5, 100, 'Natural')
         self.attack_mode = 0
         self.stealth_clock = time.time()
+        self.angery = False
+        self.angery_clock = time.time()
     def gethurt(self, x, peo):
         if time.time() < self.stealth_clock:
             self.stealth_clock = time.time()
@@ -213,6 +215,13 @@ class pig_knight (base_people):
             self.money = 0
             if peo.__class__ == player:
                 data.add_event('kill pig knight')
+        if self.health <= self.health_max * 0.5 and not self.angery:
+            self.speed = 0.3
+            self.angery = True
+            self.angery_clock = time.time() + 20
+            self.will_attack = True
+            self.attack_mode = 4
+            self.clock += 0.8 - self.speed
         return True
     def todo_attack(self):
         if time.time() < self.stealth_clock:
@@ -230,13 +239,26 @@ class pig_knight (base_people):
                         peo_defence = not peo.gethurt(self.attack, self)
                     if not peo_defence:
                         self.inmap.set_atk_map(self.px + dx, self.py + dy)
-                self.stealth_clock = time.time() + 3
-            elif self.attack_mode == 2:
-                xy_list = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+                self.stealth_clock = time.time() + 2
+            elif self.attack_mode == 2 or self.attack_mode == 3:
+                xy_list = make_xy_list(-1, 1, -1, 1)
+                xy_list.remove((0, 0))
                 for xy in xy_list:
                     dx, dy = xy
-                    newwave = base_wave(self.inmap, self.px + dx, self.py + dy,
+                    newwave = direct_wave(self.inmap, self.px + dx, self.py + dy,
                             self.attack, self, dx, dy)
+            elif self.attack_mode == 4:
+                xy_list = [(0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1),
+                        (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
+                for i in range(1, 9):
+                    dx, dy = xy_list[i]
+                    newwave = random_wave(self.inmap, self.px + dx, self.py + dy,
+                            self.attack, self, xy_list[i - 1: i + 2])
+                if time.time() < self.angery_clock:
+                    self.will_attack = True
+            if self.attack_mode == 3:
+                self.will_attack = True
+                self.attack_mode = 2
         else:
             self.update_atk_xy_list()
             if self.atk_xy_list:
@@ -267,7 +289,13 @@ class pig_knight (base_people):
             return
         if random.randint(1, 100) <= 20:
             self.will_attack = True
-            self.attack_mode = 2
+            if self.angery and random.randint(1, 100) <= 50:
+                self.attack_mode = 4
+                self.angery_clock = time.time() + 3
+            elif self.health <= self.health_max * 0.8:
+                self.attack_mode = 3
+            else:
+                self.attack_mode = 2
             self.clock += 0.8 - self.speed
             return
         if walk_find(self, 5):
@@ -284,36 +312,48 @@ class pig_knight (base_people):
                 return screen.char('D', curses.COLOR_RED, curses.COLOR_BLACK)
             elif self.attack_mode == 2:
                 return screen.char('D', curses.COLOR_DARK_RED, curses.COLOR_BLACK)
+            elif self.attack_mode == 3:
+                return screen.char('D', curses.COLOR_DARK_RED, curses.COLOR_BLACK)
+            elif self.attack_mode == 4:
+                if int(time.time() / 0.2) & 1: # 0.2s 一个周期
+                    return screen.char('D', curses.COLOR_DARK_RED, curses.COLOR_BLACK)
+                else:
+                    return screen.char('D', curses.COLOR_RED, curses.COLOR_BLACK)
+            else:
+                return screen.char('?')
         else:
             return screen.char('D')
 
 # }}}
 
+# wave {{{
 class base_wave (base_people):
-    def __init__(self, inmap, px, py, attack, master, dx, dy):
+    def __init__(self, inmap, px, py, attack, master, speed = 0.05):
         peo = inmap.get_people(px, py)
         if peo is not None:
             self.success = False
             if peo.camp != master.camp and peo.gethurt(attack, master):
                 inmap.set_atk_map(px, py)
             return
-        base_people.__init__(self, inmap, px, py, 'Wave', 1, attack, 0.05, 0, master.camp)
+        base_people.__init__(self, inmap, px, py, 'Wave', 1, attack, speed, 0, master.camp)
         self.success = True
         self.master = master
-        self.dx = dx
-        self.dy = dy
+    def get_dxy (self):
+        pass
     def todo_attack(self):
-        peo = self.inmap.get_people(self.px + self.dx, self.py + self.dy)
+        dx, dy = self.get_dxy()
+        peo = self.inmap.get_people(self.px + dx, self.py + dy)
         if peo is None:
             return False
         self.health = 0
         if peo.camp == self.camp:
             return True
         if peo.gethurt(self.attack, self.master):
-            self.inmap.set_atk_map(self.px + self.dx, self.py + self.dy)
+            self.inmap.set_atk_map(self.px + dx, self.py + dy)
         return True
     def todo_walk(self):
-        if self.inmap.trygoto(self, self.px + self.dx, self.py + self.dy):
+        dx, dy = self.get_dxy()
+        if self.inmap.trygoto(self, self.px + dx, self.py + dy):
             return
         self.health = 0
     def get_face(self):
@@ -327,9 +367,26 @@ class base_wave (base_people):
         self.health -= min(self.health, x)
         return True
 
+class direct_wave (base_wave):
+    def __init__(self, inmap, px, py, attack, master, dx, dy):
+        base_wave.__init__(self, inmap, px, py, attack, master)
+        self.dx = dx
+        self.dy = dy
+    def get_dxy(self):
+        return self.dx, self.dy
+
+class random_wave (base_wave):
+    def __init__(self, inmap, px, py, attack, master, xy_list):
+        base_wave.__init__(self, inmap, px, py, attack, master, speed = 0.2)
+        self.xy_list = xy_list
+    def get_dxy(self):
+        return random.choice(self.xy_list)
+
+# }}}
+
 class npc (base_people):
     def __init__(self, inmap, px, py, name):
-        base_people.__init__(self, inmap, px, py, name, 10000, 0, 10.0, 0, 'Neutral')
+        base_people.__init__(self, inmap, px, py, name, 10000, 0, 10.0, 1, 'Neutral')
     def todo(self):
         self.health = self.health_max
     def talk(self):
@@ -442,7 +499,7 @@ class player (base_people): # {{{
         self.mode = 'walk'
         self.keep_clock = 0
         self.events = set()
-        self.direction = 'd'
+        # self.direction = 'd'
 
     def todo (self):
         # 处理视野
@@ -463,6 +520,7 @@ class player (base_people): # {{{
                                 tmp_map[x2][y2] = False
         tmp_map[self.px][self.py] = True
 
+        health_max_peo = None # 视野内奖励最多的生物（一般这也是最重要的生物）
         px, py = 20, 20 # 打印中心
         for dx in range(screen.LINE):
             for dy in range(screen.COL):
@@ -470,10 +528,13 @@ class player (base_people): # {{{
                 y = self.py + dy - py
                 face = screen.char(' ')
                 if x in range(self.inmap.LINE) and y in range(self.inmap.COL) and tmp_map[x][y]:
+                    peo = self.inmap.get_people(x, y)
+                    if (dx != px or dy != py) and peo is not None and peo.money > 1 and\
+                            (health_max_peo is None or peo.money > health_max_peo.money):
+                        health_max_peo = peo
                     if time.time() < self.inmap.atk_map[x][y]:
                         face = screen.char('X', curses.COLOR_WHITE, curses.COLOR_RED)
                     else:
-                        peo = self.inmap.get_people(x, y)
                         if peo == None:
                             face = self.inmap.floor_map[x][y].get_face()
                         else:
@@ -484,9 +545,10 @@ class player (base_people): # {{{
             self.magic = min(self.magic + 1, self.magic_max)
             self.magic_clock += 1
 
-        screen.write(1, 0, ' ' * 14)
-        screen.write(2, 0, ' ' * 14)
-        screen.write(3, 0, ' ' * 14)
+        WIDTH_1 = 13
+        screen.write(1, 0, ' ' * WIDTH_1)
+        screen.write(2, 0, ' ' * WIDTH_1)
+        screen.write(3, 0, ' ' * WIDTH_1)
         screen.write(0, 0, self.inmap.name + '|')
         screen.write(0, len(self.inmap.name), '|')
         screen.write(1, 0, '-' * len(self.inmap.name) + '+')
@@ -496,14 +558,26 @@ class player (base_people): # {{{
         screen.write(5, 0, 'Mon: {}'.format(self.money))
         screen.write(6, 0, 'Mode: {}'.format(self.mode))
         screen.write(7, 0, 'Pos: {}, {}'.format(self.px, self.py))
-        screen.write(1, 13, '+')
-        screen.write(2, 13, '|')
-        screen.write(3, 13, '|')
-        screen.write(4, 13, '|')
-        screen.write(5, 13, '|')
-        screen.write(6, 13, '|')
-        screen.write(7, 13, '|')
-        screen.write(8, 0, '-' * 13 + '+')
+        screen.write(1, WIDTH_1, '+')
+        screen.write(2, WIDTH_1, '|')
+        screen.write(3, WIDTH_1, '|')
+        screen.write(4, WIDTH_1, '|')
+        screen.write(5, WIDTH_1, '|')
+        screen.write(6, WIDTH_1, '|')
+        screen.write(7, WIDTH_1, '|')
+        screen.write(8, 0, '-' * WIDTH_1 + '+')
+        if health_max_peo is not None:
+            WIDTH_2 = 14
+            peo = health_max_peo
+            screen.write(2, WIDTH_1 + 1, '{}'.format(peo.name))
+            screen.write(3, WIDTH_1 + 1, '  {}'.format(peo.camp))
+            screen.write(4, WIDTH_1 + 1, 'HP: {}/{}'.format(peo.health, peo.health_max))
+            screen.write(5, WIDTH_1 + 1, 'Mon: {}'.format(peo.money))
+            screen.write(2, WIDTH_1 + WIDTH_2 + 1, '|')
+            screen.write(3, WIDTH_1 + WIDTH_2 + 1, '|')
+            screen.write(4, WIDTH_1 + WIDTH_2 + 1, '|')
+            screen.write(5, WIDTH_1 + WIDTH_2 + 1, '|')
+            screen.write(6, WIDTH_1 + 1, '-' * WIDTH_2 + '+')
         screen.refresh()
 
         def doattack(flag):
@@ -548,7 +622,7 @@ class player (base_people): # {{{
             peo = self.inmap.get_people(self.px + dx, self.py + dy)
             self.mode = 'tired'
             self.keep_clock = time.time() + 0.2
-            newwave = base_wave(self.inmap, self.px + dx, self.py + dy,
+            newwave = direct_wave(self.inmap, self.px + dx, self.py + dy,
                     self.attack, self, dx, dy)
             screen.refresh()
 
@@ -580,7 +654,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px - 1, self.py)
-            self.direction = 'w'
+            # self.direction = 'w'
         if c == ord('s'):
             if self.mode == 'attack':
                 doattack('s')
@@ -589,7 +663,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px + 1, self.py)
-            self.direction = 's'
+            # self.direction = 's'
         if c == ord('d'):
             if self.mode == 'attack':
                 doattack('d')
@@ -598,7 +672,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px, self.py + 1)
-            self.direction = 'd'
+            # self.direction = 'd'
         if c == ord('a'):
             if self.mode == 'attack':
                 doattack('a')
@@ -607,7 +681,7 @@ class player (base_people): # {{{
             else:
                 self.mode = 'walk'
                 self.inmap.trygoto(self, self.px, self.py - 1)
-            self.direction = 'a'
+            # self.direction = 'a'
         if c == ord('j'):
             self.mode = 'attack'
             self.keep_clock = time.time() + 1
@@ -623,6 +697,25 @@ class player (base_people): # {{{
             else:
                 self.mode = 'defence'
                 self.keep_clock = time.time() + 0.4
+        # if c == ord('q'):
+        #     freetime_lock()
+        #     choose_char = screen.char(' ', curses.COLOR_GREEN, curses.COLOR_GREEN)
+        #     screen.write_ch(px, py, choose_char)
+        #     screen.refresh(False)
+        #     cc, dx, dy = screen.getch(), 0, 0
+        #     while cc != ord('q'):
+        #         if cc == 'w':
+        #             dx = max(-5, dx - 1)
+        #         if cc == 's':
+        #             dx = min(5, dx + 1)
+        #         if cc == 'a':
+        #             dx = max(-5, dy - 1)
+        #         if cc == 'd':
+        #             dx = min(5, dy + 1)
+        #         screen.write_ch(px + dx, py + dy, choose_char)
+        #         screen.refresh(False)
+        #         cc = screen.getch()
+        #     freetime_unlock()
 
     def gethurt(self, x, peo):
         if self.mode == 'defence':
@@ -643,5 +736,7 @@ class player (base_people): # {{{
             return screen.char('@', curses.COLOR_WHITE, curses.COLOR_YELLOW)
         if self.mode == 'attack':
             return screen.char('@', curses.COLOR_RED, curses.COLOR_BLUE)
+        if self.mode == 'spell':
+            return screen.char('@', curses.COLOR_DARK_RED, curses.COLOR_BLUE)
         return screen.char('@', curses.COLOR_WHITE, curses.COLOR_BLUE)
 # }}}
