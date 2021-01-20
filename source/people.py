@@ -216,7 +216,7 @@ class pig_knight (base_people):
             if peo.__class__ == player:
                 data.add_event('kill pig knight')
         if self.health <= self.health_max * 0.5 and not self.angery:
-            self.speed = 0.3
+            self.speed = 0.4
             self.angery = True
             self.angery_clock = time.time() + 20
             self.will_attack = True
@@ -289,9 +289,9 @@ class pig_knight (base_people):
             return
         if random.randint(1, 100) <= 20:
             self.will_attack = True
-            if self.angery and random.randint(1, 100) <= 50:
+            if self.angery and random.randint(1, 100) <= 30:
                 self.attack_mode = 4
-                self.angery_clock = time.time() + 3
+                self.angery_clock = time.time() + 1.25
             elif self.health <= self.health_max * 0.8:
                 self.attack_mode = 3
             else:
@@ -529,7 +529,7 @@ class player (base_people): # {{{
                 face = screen.char(' ')
                 if x in range(self.inmap.LINE) and y in range(self.inmap.COL) and tmp_map[x][y]:
                     peo = self.inmap.get_people(x, y)
-                    if (dx != px or dy != py) and peo is not None and peo.money > 1 and\
+                    if (dx != px or dy != py) and peo is not None and peo.money > 0 and\
                             (health_max_peo is None or peo.money > health_max_peo.money):
                         health_max_peo = peo
                     if time.time() < self.inmap.atk_map[x][y]:
@@ -545,12 +545,11 @@ class player (base_people): # {{{
             self.magic = min(self.magic + 1, self.magic_max)
             self.magic_clock += 1
 
-        WIDTH_1 = 13
-        screen.write(1, 0, ' ' * WIDTH_1)
-        screen.write(2, 0, ' ' * WIDTH_1)
-        screen.write(3, 0, ' ' * WIDTH_1)
         screen.write(0, 0, self.inmap.name + '|')
         screen.write(0, len(self.inmap.name), '|')
+        WIDTH_1 = 13
+        for i in range(1, 8):
+            screen.write(i, 0, ' ' * WIDTH_1)
         screen.write(1, 0, '-' * len(self.inmap.name) + '+')
         screen.write(2, 0, 'HP: {}/{}'.format(self.health, self.health_max))
         screen.write(3, 0, 'MP: {}/{}'.format(self.magic, self.magic_max))
@@ -558,26 +557,22 @@ class player (base_people): # {{{
         screen.write(5, 0, 'Mon: {}'.format(self.money))
         screen.write(6, 0, 'Mode: {}'.format(self.mode))
         screen.write(7, 0, 'Pos: {}, {}'.format(self.px, self.py))
-        screen.write(1, WIDTH_1, '+')
-        screen.write(2, WIDTH_1, '|')
-        screen.write(3, WIDTH_1, '|')
-        screen.write(4, WIDTH_1, '|')
-        screen.write(5, WIDTH_1, '|')
-        screen.write(6, WIDTH_1, '|')
-        screen.write(7, WIDTH_1, '|')
+        for i in range(1, 8):
+            screen.write(i, WIDTH_1, '+')
         screen.write(8, 0, '-' * WIDTH_1 + '+')
         if health_max_peo is not None:
-            WIDTH_2 = 14
+            ST_HIGHT, WIDTH_2 = 8, WIDTH_1
             peo = health_max_peo
-            screen.write(2, WIDTH_1 + 1, '{}'.format(peo.name))
-            screen.write(3, WIDTH_1 + 1, '  {}'.format(peo.camp))
-            screen.write(4, WIDTH_1 + 1, 'HP: {}/{}'.format(peo.health, peo.health_max))
-            screen.write(5, WIDTH_1 + 1, 'Mon: {}'.format(peo.money))
-            screen.write(2, WIDTH_1 + WIDTH_2 + 1, '|')
-            screen.write(3, WIDTH_1 + WIDTH_2 + 1, '|')
-            screen.write(4, WIDTH_1 + WIDTH_2 + 1, '|')
-            screen.write(5, WIDTH_1 + WIDTH_2 + 1, '|')
-            screen.write(6, WIDTH_1 + 1, '-' * WIDTH_2 + '+')
+            for i in range(ST_HIGHT + 1, ST_HIGHT + 6):
+                screen.write(i, 0, ' ' * WIDTH_2)
+            screen.write(ST_HIGHT + 1, 0, '{}'.format(peo.name))
+            screen.write(ST_HIGHT + 2, 0, '  {}'.format(peo.camp))
+            screen.write(ST_HIGHT + 3, 0, 'HP: {}'.format(peo.health))
+            screen.write(ST_HIGHT + 4, 0, 'ATK: {}'.format(peo.attack))
+            screen.write(ST_HIGHT + 5, 0, 'Mon: {}'.format(peo.money))
+            for i in range(ST_HIGHT + 1, ST_HIGHT + 6):
+                screen.write(i, WIDTH_2, '|')
+            screen.write(ST_HIGHT + 6, 0, '-' * WIDTH_2 + '+')
         screen.refresh()
 
         def doattack(flag):
