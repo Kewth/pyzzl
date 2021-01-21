@@ -403,22 +403,30 @@ class npc_white (npc): # {{{
         screen.infobox('{}({})'.format(self.name, self.camp),
                 ['My name is white.', 'Maybe I can teach you what to do.',
                     'Remember check the exclamation marks first.',
-                    'You can quit by press Ctrl-C any time and the archive will be saved automatically.',
-                    'By the way, do you want to read archive or write archive? (r/w)'])
-        screen.refresh()
-        freetime_lock()
-        cs = screen.choose('rw', True)
-        freetime_unlock()
-        if cs == ord('r'):
-            name = screen.getstr(20, 5, 'type the archive name: ')
-            if not data.init(name):
-                screen.infobox('{}({})'.format(self.name, self.camp),
-                        ['I am coufused.', 'The archive seems to be wrong.'])
-        if cs == ord('w'):
-            name = screen.getstr(20, 5, 'type the archive name: ')
-            if not data.save(name):
-                screen.infobox('{}({})'.format(self.name, self.camp),
-                        ['I am coufused.'])
+                    'You can quit by press Ctrl-C any time and the archive will be saved automatically.'])
+        # screen.refresh()
+                # ['My name is white.', 'Maybe I can teach you what to do.',
+                #     'Remember check the exclamation marks first.',
+                #     'You can quit by press Ctrl-C any time and the archive will be saved automatically.',
+                #     'By the way, do you want to read archive or write archive? (r/w)'])
+        # screen.refresh()
+        # freetime_lock()
+        # cs = screen.getch()
+        # freetime_unlock()
+        # if cs == ord('r'):
+        #     freetime_lock()
+        #     name = screen.getstr(20, 5, 'type the archive name: ')
+        #     freetime_unlock()
+        #     if not data.init(name):
+        #         screen.infobox('{}({})'.format(self.name, self.camp),
+        #                 ['I am coufused.', 'The archive seems to be wrong.'])
+        # if cs == ord('w'):
+        #     freetime_lock()
+        #     name = screen.getstr(20, 5, 'type the archive name: ')
+        #     freetime_unlock()
+        #     if not data.save(name):
+        #         screen.infobox('{}({})'.format(self.name, self.camp),
+        #                 ['I am coufused.'])
 # }}}
 
 class npc_pigger (npc): # {{{
@@ -438,11 +446,13 @@ class npc_peter (npc): # {{{
     def __init__(self, inmap, px, py):
         npc.__init__(self, inmap, px, py, 'Peter')
     def talk(self):
-        buy1 = data.get_event('shop 1')
-        buy2 = data.get_event('shop 2')
-        buy3 = data.get_event('shop 3')
-        buy4 = data.get_event('shop 4')
-        buy5 = data.get_event('shop 5')
+        buy1, mon1 = data.get_event('shop 1'), 50
+        buy2, mon2 = data.get_event('shop 2'), 200
+        buy3, mon3 = data.get_event('shop 3'), 100
+        buy4, mon4 = data.get_event('shop 4'), 150
+        buy5, mon5 = data.get_event('shop 5'), 50
+        buy6, mon6 = data.get_event('shop 6'), 500
+        buy7, mon7 = data.get_event('shop 7'), 500
         screen.infobox('{}({})'.format(self.name, self.camp),
                 ['Hey, buddy.', 'I think you must want to buy something.', 'Donot worry, the shop is safe.',
                     '(1) New teleport point. ({})'.format('bought' if buy1 else 50),
@@ -452,42 +462,68 @@ class npc_peter (npc): # {{{
                     '(5) {} ({})'.format(
                         'New teleport point.' if data.get_event('kill pig master') else '???',
                         'bought' if buy5 else 50),
+                    '(6) {} ({})'.format(
+                        'Strength.' if data.get_event('kill pig knight') else '???',
+                        'bought' if buy6 else 500),
+                    '(7) {} ({})'.format(
+                        'Maximum Magic.' if data.get_event('kill pig knight') else '???',
+                        'bought' if buy7 else 500),
                     ])
         screen.refresh()
         freetime_lock()
-        cs = screen.choose('12345', True)
+        cs = screen.getch()
         freetime_unlock()
         if cs == ord('1'):
-            if not buy1 and data.tryusemoney(50):
+            if not buy1 and data.tryusemoney(mon1):
                 data.add_event('shop 1')
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Now you can go back to Main City to check the new teleport.'])
             else:
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
         if cs == ord('2'):
-            if not buy2 and data.tryusemoney(200):
+            if not buy2 and data.tryusemoney(mon2):
                 data.add_event('shop 2')
                 data.register.peo.attack += 1
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Great.'])
             else:
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
         if cs == ord('3'):
-            if not buy3 and data.tryusemoney(100):
+            if not buy3 and data.tryusemoney(mon3):
                 data.add_event('shop 3')
             else:
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
         if cs == ord('4'):
-            if not buy4 and data.tryusemoney(150):
+            if not buy4 and data.tryusemoney(mon4):
                 data.add_event('shop 4')
                 data.register.peo.health_max += 5
             else:
                 screen.infobox('{}({})'.format(self.name, self.camp), ['Humm... You must be kidding me.'])
         if cs == ord('5'):
-            if data.get_event('kill pig master') and not buy5 and data.tryusemoney(50):
+            if data.get_event('kill pig master') and not buy5 and data.tryusemoney(mon5):
                 data.add_event('shop 5')
             else:
                 screen.infobox('{}({})'.format(self.name, self.camp), [
                     'Humm... You must be kidding me.',
                     'Maybe you should kill the Pig Master.',
+                    ])
+        if cs == ord('6'):
+            if data.get_event('kill pig knight') and not buy6 and data.tryusemoney(mon6):
+                data.add_event('shop 6')
+                data.register.peo.attack += 1
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Great.'])
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), [
+                    'Humm... You must be kidding me.',
+                    'Maybe you should kill the Pig Knight.',
+                    ])
+        if cs == ord('7'):
+            if data.get_event('kill pig knight') and not buy7 and data.tryusemoney(mon7):
+                data.add_event('shop 7')
+                data.register.peo.magic_max += 3
+                screen.infobox('{}({})'.format(self.name, self.camp), ['Great.'])
+            else:
+                screen.infobox('{}({})'.format(self.name, self.camp), [
+                    'Humm... You must be kidding me.',
+                    'Maybe you should kill the Pig Knight.',
                     ])
 # }}}
 

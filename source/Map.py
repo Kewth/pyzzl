@@ -270,8 +270,8 @@ class palace_secret_room_2 (base_map): # {{{
         charmap = '''
           #########################
 1~~~~~~~~~+.......................#
-          #.......................#
-          #.......................#
+~         #.......................#
+~~~~~~~~-+-.......................#
           #.......................#
           #.......................#
           #.......................#
@@ -290,6 +290,8 @@ class palace_secret_room_2 (base_map): # {{{
                     self.floor_map[x][y] = floor.spa()
                 elif charmap[x][y] == '+':
                     self.floor_map[x][y] = floor.once_door()
+                elif charmap[x][y] == '-':
+                    self.floor_map[x][y] = floor.event_door('kill pig knight')
                 elif charmap[x][y] == '#':
                     self.floor_map[x][y] = floor.wall()
                 elif charmap[x][y] == '1':
