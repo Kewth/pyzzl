@@ -200,7 +200,7 @@ class pig_master (base_people):
 
 class pig_knight (base_people):
     def __init__(self, inmap, px, py):
-        base_people.__init__(self, inmap, px, py, 'Pig Knight', 100, 3, 0.5, 100, 'Natural')
+        base_people.__init__(self, inmap, px, py, 'Pig Knight', 100, 3, 0.5, 150, 'Natural')
         self.attack_mode = 0
         self.stealth_clock = time.time()
         self.angery = False
@@ -451,23 +451,23 @@ class npc_peter (npc): # {{{
         buy3, mon3 = data.get_event('shop 3'), 100
         buy4, mon4 = data.get_event('shop 4'), 150
         buy5, mon5 = data.get_event('shop 5'), 50
-        buy6, mon6 = data.get_event('shop 6'), 500
-        buy7, mon7 = data.get_event('shop 7'), 500
+        buy6, mon6 = data.get_event('shop 6'), 400
+        buy7, mon7 = data.get_event('shop 7'), 300
         screen.infobox('{}({})'.format(self.name, self.camp),
                 ['Hey, buddy.', 'I think you must want to buy something.', 'Donot worry, the shop is safe.',
-                    '(1) New teleport point. ({})'.format('bought' if buy1 else 50),
-                    '(2) Strength. ({})'.format('bought' if buy2 else 200),
-                    '(3) Open the door. ({})'.format('bought' if buy3 else 100),
-                    '(4) Maximum Health. ({})'.format('bought' if buy4 else 150),
+                    '(1) New teleport point. ({})'.format('bought' if buy1 else mon1),
+                    '(2) Strength. ({})'.format('bought' if buy2 else mon2),
+                    '(3) Open the door. ({})'.format('bought' if buy3 else mon3),
+                    '(4) Maximum Health. ({})'.format('bought' if buy4 else mon4),
                     '(5) {} ({})'.format(
                         'New teleport point.' if data.get_event('kill pig master') else '???',
-                        'bought' if buy5 else 50),
+                        'bought' if buy5 else mon5),
                     '(6) {} ({})'.format(
                         'Strength.' if data.get_event('kill pig knight') else '???',
-                        'bought' if buy6 else 500),
+                        'bought' if buy6 else mon6),
                     '(7) {} ({})'.format(
                         'Maximum Magic.' if data.get_event('kill pig knight') else '???',
-                        'bought' if buy7 else 500),
+                        'bought' if buy7 else mon7),
                     ])
         screen.refresh()
         freetime_lock()
