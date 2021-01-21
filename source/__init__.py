@@ -68,7 +68,7 @@ def work(stdscr):
         screen.refresh(False)
         time.sleep(1)
     except KeyboardInterrupt:
-        data.save(data_name)
+        data.save()
         screen.clear()
         screen.write(20, 20, 'See you next time.')
         screen.write(21, 20, 'Aricheve is saved.')

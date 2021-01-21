@@ -152,8 +152,8 @@ class archive_point (base_floor):
         base_floor.__init__(self)
     def meet (self, peo):
         if peo.__class__ == people.player:
-            screen.infobox('Archive point', ['Your position is saved', 'And the archive is saved to "default".'])
+            screen.infobox('Archive point', ['Your position is saved', 'And the archive is saved to "{}".'.format(data.init.name)])
             data.save_pos()
-            data.save('default')
+            data.save()
     def get_face(self):
         return screen.char('A', curses.COLOR_WHITE, curses.COLOR_YELLOW)

@@ -12,6 +12,7 @@ def register(peo):
     register.inmap = None
 
 def init(name):
+    init.name = name
     name = 'data/{}'.format(name)
     if not os.path.exists(name):
         return False
@@ -31,8 +32,8 @@ def init(name):
     peo.keep_clock = 0
     return True
 
-def save(name):
-    name = 'data/{}'.format(name)
+def save():
+    name = 'data/{}'.format(init.name)
     peo = register.peo
     tar = open(name, 'w')
     dic = copy.copy(peo.__dict__)
