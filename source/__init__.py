@@ -27,8 +27,9 @@ def work(stdscr):
             return
         player = people.player()
         data.register(player)
-        if os.path.exists('data/{}'.format(data_name)):
-            data.init(data_name)
+        # if os.path.exists('data/{}'.format(data_name)):
+        #     data.init(data_name)
+        data.init(data_name)
         if player.inmap == None:
             city = Map.main_city()
             player.px = 0
